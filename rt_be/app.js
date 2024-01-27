@@ -18,11 +18,11 @@ var corsOptions = {
   optionsSuccessStatus: 200
 };
 
-app.use(cors(corsOptions));
+
 
 
 var app = express();
-
+app.use(cors(corsOptions));
 
 
 // view engine setup
