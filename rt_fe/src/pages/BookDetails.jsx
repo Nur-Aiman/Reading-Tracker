@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { HOST } from '../api';
+import Navbar from '../components/Navbar';
 
 
 const BookDetails = () => {
@@ -149,6 +150,7 @@ const saveNotes = () => {
 
     return (
       <div className="max-w-md mx-auto p-6 shadow-lg rounded-lg" style={{ backgroundColor: '#F3F8FF' }}>
+         <Navbar />
           <div className="text-center my-6">
               {editMode ? (
                   <input
