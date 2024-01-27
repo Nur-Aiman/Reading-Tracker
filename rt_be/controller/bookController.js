@@ -124,22 +124,26 @@ updateProgress: async function (req, res) {
       throw new Error('Book not found');
     }
 
-    const { title, author, total_page } = bookResult.rows[0];
+    const { title, author, total_page, currentNotes } = bookResult.rows[0];
+
+    // If the last page equals the total pages, ensure notes are not overwritten
+    const finalNotes = lastPage >= total_page && !notes ? currentNotes : notes;
+
 
     // Update the page_read column in the Book table
     const updateBook = `
-      UPDATE Book
-      SET 
-        page_read = $1::integer,
-        notes = $2,
-        percentage_completed = ROUND((CAST($1 AS NUMERIC) / NULLIF(total_page, 0)) * 100, 2)
-      WHERE id = $3::integer
-      RETURNING *`;
-    const updatedBook = await pool.query(updateBook, [lastPage, notes, bookId]);
+    UPDATE Book
+    SET 
+      page_read = $1::integer,
+      notes = $2,
+      percentage_completed = ROUND((CAST($1 AS NUMERIC) / NULLIF(total_page, 0)) * 100, 2)
+    WHERE id = $3::integer
+    RETURNING *`;
+  const updatedBook = await pool.query(updateBook, [lastPage, finalNotes, bookId]);
 
     // Check if the last page equals total pages and update status to 'Finish'
     if (lastPage >= total_page) {
-      const finishBookQuery = 'UPDATE Book SET status = \'Finish\' WHERE id = $1';
+      const finishBookQuery = 'UPDATE Book SET status = \'Finish\' WHERE id = $1 RETURNING *';
       await pool.query(finishBookQuery, [bookId]);
     }
 
