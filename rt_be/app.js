@@ -7,14 +7,23 @@ var cors = require('cors');
 
 // Define CORS options
 var corsOptions = {
-  origin: 'http://localhost:3000', // Allow only the front-end to make requests
-  optionsSuccessStatus: 200 
+  origin: function (origin, callback) {
+    const allowedOrigins = ['http://localhost:3000', 'https://reading-tracker-b1nx.onrender.com'];
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  optionsSuccessStatus: 200
 };
+
+app.use(cors(corsOptions));
+
 
 var app = express();
 
-// Enable CORS with the options before defining any routes
-app.use(cors(corsOptions));
+
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
