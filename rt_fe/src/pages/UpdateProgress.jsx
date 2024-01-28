@@ -224,11 +224,11 @@ const UpdateProgress = () => {
           {showNotesModal && (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center overflow-y-auto h-full w-full" id="my-modal">
         <div className="relative m-auto p-5 border w-11/12 max-w-4xl h-5/6 shadow-lg rounded-md bg-white flex flex-col">
-            <div className="flex-1 overflow-auto p-4">
+            <div className="flex-1 overflow-auto p-2">
                 <h3 className="text-lg leading-6 font-medium text-gray-900 text-center mb-4">Notes - {book.title}</h3>
                 <textarea
                     className="w-full p-2 border rounded"
-                    style={{ minHeight: '80%', borderColor: '#49108B', color: '#49108B' }} 
+                    style={{ minHeight: '80%', borderColor: '#49108B', color: 'black' }} 
                     value={editableNotes}
                     onChange={(e) => setEditableNotes(e.target.value)}
                 />
