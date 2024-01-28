@@ -111,64 +111,69 @@ closeBook: async function (req, res) {
 updateProgress: async function (req, res) {
   const { bookId } = req.params;
   const { initialPage, lastPage, notes } = req.body;
-  const currentDate = new Date().toISOString().slice(0, 10); // Format current date as YYYY-MM-DD
+  const currentDate = new Date().toISOString().slice(0, 10);
 
   try {
-    await pool.query('BEGIN'); // Start a transaction
+    await pool.query('BEGIN');
 
-    // Retrieve the book title and author from the Book table
-    const bookQuery = 'SELECT title, author, total_page FROM Book WHERE id = $1';
+    const bookQuery = 'SELECT title, author, total_page, notes as currentNotes FROM Book WHERE id = $1';
     const bookResult = await pool.query(bookQuery, [bookId]);
 
     if (bookResult.rows.length === 0) {
+      await pool.query('ROLLBACK');
       throw new Error('Book not found');
     }
 
     const { title, author, total_page, currentNotes } = bookResult.rows[0];
+    const finalNotes = (notes !== undefined && notes !== null) ? notes : currentNotes;
 
-    // If the last page equals the total pages, ensure notes are not overwritten
-    const finalNotes = lastPage >= total_page && !notes ? currentNotes : notes;
+    const updateBookQuery = `
+      UPDATE Book
+      SET page_read = $1,
+          notes = $2,
+          percentage_completed = ROUND((CAST($1 AS NUMERIC) / NULLIF(total_page, 0)) * 100, 2)
+      WHERE id = $3
+      RETURNING *;
+    `;
 
+    const updatedBook = await pool.query(updateBookQuery, [lastPage, finalNotes, bookId]);
 
-    // Update the page_read column in the Book table
-    const updateBook = `
-    UPDATE Book
-    SET 
-      page_read = $1::integer,
-      notes = $2,
-      percentage_completed = ROUND((CAST($1 AS NUMERIC) / NULLIF(total_page, 0)) * 100, 2)
-    WHERE id = $3::integer
-    RETURNING *`;
-  const updatedBook = await pool.query(updateBook, [lastPage, finalNotes, bookId]);
-
-    // Check if the last page equals total pages and update status to 'Finish'
     if (lastPage >= total_page) {
       const finishBookQuery = 'UPDATE Book SET status = \'Finish\' WHERE id = $1 RETURNING *';
       await pool.query(finishBookQuery, [bookId]);
     }
 
-    // Check if there's an entry for today already
-    const checkHistory = 'SELECT * FROM reading_history WHERE book_id = $1 AND date = $2';
-    const historyResult = await pool.query(checkHistory, [bookId, currentDate]);
+    const checkHistoryQuery = 'SELECT * FROM reading_history WHERE book_id = $1 AND date = $2';
+    const historyResult = await pool.query(checkHistoryQuery, [bookId, currentDate]);
 
     if (historyResult.rows.length > 0) {
-      // Update existing reading_history entry for today
-      const updateHistory = 'UPDATE reading_history SET end_page = $1, book_title = $2, author = $3 WHERE book_id = $4 AND date = $5 RETURNING *';
-      await pool.query(updateHistory, [lastPage, title, author, bookId, currentDate]);
+      const updateHistoryQuery = `
+        UPDATE reading_history
+        SET end_page = $1,
+            book_title = $2,
+            author = $3
+        WHERE book_id = $4 AND date = $5
+        RETURNING *;
+      `;
+      await pool.query(updateHistoryQuery, [lastPage, title, author, bookId, currentDate]);
     } else {
-      // Insert new entry into reading_history
-      const insertHistory = 'INSERT INTO reading_history (book_id, date, book_title, author, start_page, end_page) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *';
-      await pool.query(insertHistory, [bookId, currentDate, title, author, initialPage, lastPage]);
+      const insertHistoryQuery = `
+        INSERT INTO reading_history (book_id, date, book_title, author, start_page, end_page)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING *;
+      `;
+      await pool.query(insertHistoryQuery, [bookId, currentDate, title, author, initialPage, lastPage]);
     }
 
-    await pool.query('COMMIT'); // Commit the transaction
+    await pool.query('COMMIT');
     res.status(200).json({ message: 'Progress updated successfully', book: updatedBook.rows[0] });
   } catch (error) {
-    await pool.query('ROLLBACK'); // Rollback the transaction on error
+    await pool.query('ROLLBACK');
     console.error('Error updating progress:', error);
-    res.status(500).json({ message: 'Failed to update progress' });
+    res.status(500).json({ message: 'Failed to update progress', error: error.message });
   }
 },
+
 
 
 
