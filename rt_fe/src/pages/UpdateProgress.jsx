@@ -41,44 +41,37 @@ const UpdateProgress = () => {
 
     // Client side: Update the handleSubmit function to send notes
 
-const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // Prepare the data to be sent to the backend
-    const progressData = {
-        initialPage: initialPage,
-        lastPage: lastPage,
-        notes: editableNotes // Include the notes state variable
-    };
-
-    try {
-        // Send a PUT request to the updateProgress endpoint
-        const response = await fetch(`${HOST}/book/updateProgress/${bookId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(progressData)
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            // If the request was successful, show a confirmation message
-            console.log('Update successful:', data);
-            alert('Progress and notes updated successfully');
-            navigate('/'); // Navigate back to the book list after updating
-        } else {
-            // If the request failed, show an error message
-            console.error('Update failed:', data);
-            alert('Failed to update progress and notes. Please try again.');
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+    
+        const progressData = {
+            initialPage: initialPage,
+            lastPage: parseInt(lastPage, 10) // Ensure lastPage is an integer
+        };
+    
+        try {
+            const response = await fetch(`${HOST}/book/updateProgress/${bookId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(progressData)
+            });
+    
+            const data = await response.json();
+            if (response.ok) {
+                console.log('Progress update successful:', data);
+                alert('Progress updated successfully');
+                navigate('/');
+            } else {
+                console.error('Failed to update progress:', data);
+                alert('Failed to update progress. Please try again.');
+            }
+        } catch (error) {
+            console.error('Network error:', error);
+            alert('Network error. Please try again.');
         }
-    } catch (error) {
-        // Catch any network errors and log them
-        console.error('Network error:', error);
-        alert('Network error. Please try again.');
-    }
-};
+    };
+    
+    
 
     
 
@@ -103,13 +96,17 @@ const handleSubmit = async (e) => {
         setLastPage((prevLastPage) => {
             if (prevLastPage < book.total_page) {
                 const newLastPage = prevLastPage + 1;
-                console.log(`Initial Page: ${initialPage}, Last Page: ${newLastPage}`);
+                console.log(`Data type of initialPage: ${typeof initialPage}`);
+                console.log(`Data type of newLastPage: ${typeof newLastPage}`);
                 return newLastPage;
             }
-            console.log(`Initial Page: ${initialPage}, Last Page: ${prevLastPage}`); // Log even when not increasing
-            return prevLastPage; // If lastPage equals total pages, don't increase it further
+            console.log(`Initial Page: ${initialPage}, Last Page: ${prevLastPage}`);
+            console.log(`Data type of initialPage: ${typeof initialPage}`);
+            console.log(`Data type of prevLastPage: ${typeof prevLastPage}`);
+            return prevLastPage;
         });
     };
+    
     
       
     
@@ -129,12 +126,29 @@ const handleSubmit = async (e) => {
         }
     };
 
-    const saveNotes = () => {
-        // When saving, update the book state with the new notes
-        setBook((prevBook) => ({ ...prevBook, notes: editableNotes }));
-        setShowNotesModal(false); // Close the modal
-        // Now when handleSubmit is called, it will use the updated book state
+    const saveNotes = async () => {
+        try {
+            const response = await fetch(`${HOST}/book/updateNotes/${bookId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ notes: editableNotes })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                console.log('Notes updated:', data);
+                alert('Notes updated successfully');
+                setShowNotesModal(false);
+                setBook((prevBook) => ({ ...prevBook, notes: editableNotes }));
+            } else {
+                console.error('Failed to update notes:', data);
+                alert('Failed to update notes. Please try again.');
+            }
+        } catch (error) {
+            console.error('Network error:', error);
+            alert('Network error. Please try again.');
+        }
     };
+    
     
     
     

@@ -110,41 +110,56 @@ closeBook: async function (req, res) {
 
 updateProgress: async function (req, res) {
   const { bookId } = req.params;
-  const { initialPage, lastPage, notes } = req.body;
+  const { initialPage, lastPage } = req.body; // Retrieve initialPage from the body
   const currentDate = new Date().toISOString().slice(0, 10);
 
   try {
     await pool.query('BEGIN');
 
-    const bookQuery = 'SELECT title, author, total_page, notes as currentNotes FROM Book WHERE id = $1';
-    const bookResult = await pool.query(bookQuery, [bookId]);
+    const bookIdInt = parseInt(bookId, 10);
+    const lastPageInt = parseInt(lastPage, 10);
+
+    if (isNaN(bookIdInt) || isNaN(lastPageInt)) {
+      await pool.query('ROLLBACK');
+      return res.status(400).json({ message: "Invalid parameters." });
+    }
+
+    // Retrieve book details including title and author
+    const bookQuery = 'SELECT title, author, total_page FROM Book WHERE id = $1';
+    const bookResult = await pool.query(bookQuery, [bookIdInt]);
 
     if (bookResult.rows.length === 0) {
       await pool.query('ROLLBACK');
-      throw new Error('Book not found');
+      return res.status(404).json({ message: 'Book not found' });
     }
 
-    const { title, author, total_page, currentNotes } = bookResult.rows[0];
-    const finalNotes = (notes !== undefined && notes !== null) ? notes : currentNotes;
+    const { title, author, total_page } = bookResult.rows[0];
 
     const updateBookQuery = `
       UPDATE Book
-      SET page_read = $1,
-          notes = $2,
-          percentage_completed = ROUND((CAST($1 AS NUMERIC) / NULLIF(total_page, 0)) * 100, 2)
+      SET page_read = $1::integer,
+          percentage_completed = ROUND((CAST($1 AS NUMERIC) / NULLIF($2, 0)) * 100, 2)
       WHERE id = $3
       RETURNING *;
     `;
 
-    const updatedBook = await pool.query(updateBookQuery, [lastPage, finalNotes, bookId]);
+    const updatedBook = await pool.query(updateBookQuery, [lastPageInt, total_page, bookIdInt]);
 
-    if (lastPage >= total_page) {
+    const initialPageInt = parseInt(initialPage, 10); // Parse initialPage
+  if (isNaN(initialPageInt)) {
+    await pool.query('ROLLBACK');
+    return res.status(400).json({ message: "Invalid initialPage, it must be an integer." });
+  }
+
+
+
+    if (lastPageInt >= total_page) {
       const finishBookQuery = 'UPDATE Book SET status = \'Finish\' WHERE id = $1 RETURNING *';
-      await pool.query(finishBookQuery, [bookId]);
+      await pool.query(finishBookQuery, [bookIdInt]);
     }
 
     const checkHistoryQuery = 'SELECT * FROM reading_history WHERE book_id = $1 AND date = $2';
-    const historyResult = await pool.query(checkHistoryQuery, [bookId, currentDate]);
+    const historyResult = await pool.query(checkHistoryQuery, [bookIdInt, currentDate]);
 
     if (historyResult.rows.length > 0) {
       const updateHistoryQuery = `
@@ -155,15 +170,15 @@ updateProgress: async function (req, res) {
         WHERE book_id = $4 AND date = $5
         RETURNING *;
       `;
-      await pool.query(updateHistoryQuery, [lastPage, title, author, bookId, currentDate]);
+      await pool.query(updateHistoryQuery, [lastPageInt, title, author, bookIdInt, currentDate]);
     } else {
       const insertHistoryQuery = `
-        INSERT INTO reading_history (book_id, date, book_title, author, start_page, end_page)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING *;
-      `;
-      await pool.query(insertHistoryQuery, [bookId, currentDate, title, author, initialPage, lastPage]);
-    }
+      INSERT INTO reading_history (book_id, date, book_title, author, start_page, end_page)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *;
+    `;
+    await pool.query(insertHistoryQuery, [bookIdInt, currentDate, title, author, initialPageInt, lastPageInt]); // Use initialPageInt here
+  }
 
     await pool.query('COMMIT');
     res.status(200).json({ message: 'Progress updated successfully', book: updatedBook.rows[0] });
@@ -173,6 +188,7 @@ updateProgress: async function (req, res) {
     res.status(500).json({ message: 'Failed to update progress', error: error.message });
   }
 },
+
 
 
 
