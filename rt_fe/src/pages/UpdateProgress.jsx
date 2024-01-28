@@ -101,16 +101,16 @@ const handleSubmit = async (e) => {
 
     const handleIncreasePage = () => {
         setLastPage((prevLastPage) => {
-          // Check if the current page count is less than the total pages
-          if (prevLastPage < book.total_page) {
-            const newLastPage = prevLastPage + 1;
-            setBook((prevBook) => ({ ...prevBook, page_read: newLastPage })); // Update the book state
-            console.log(`Initial Page: ${initialPage}, Last Page: ${newLastPage}`);
-            return newLastPage;
-          }
-          return prevLastPage; // If lastPage equals total pages, don't increase it further
+            if (prevLastPage < book.total_page) {
+                const newLastPage = prevLastPage + 1;
+                console.log(`Initial Page: ${initialPage}, Last Page: ${newLastPage}`);
+                return newLastPage;
+            }
+            console.log(`Initial Page: ${initialPage}, Last Page: ${prevLastPage}`); // Log even when not increasing
+            return prevLastPage; // If lastPage equals total pages, don't increase it further
         });
-      };
+    };
+    
       
     
     const handleDecreasePage = () => {
