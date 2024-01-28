@@ -222,34 +222,36 @@ const UpdateProgress = () => {
       
           {/* Notes Modal */}
           {showNotesModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center overflow-y-auto h-full w-full" id="my-modal">
-              <div className="relative m-auto p-5 border w-11/12 max-w-4xl h-5/6 shadow-lg rounded-md bg-white" style={{ backgroundColor: '#F3F8FF', borderColor: '#49108B' }}>
-                <h3 className="text-lg leading-6 font-medium text-gray-900 text-center">Notes - {book.title}</h3>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center overflow-y-auto h-full w-full" id="my-modal">
+        <div className="relative m-auto p-5 border w-11/12 max-w-4xl h-5/6 shadow-lg rounded-md bg-white flex flex-col">
+            <div className="flex-1 overflow-auto p-4">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 text-center mb-4">Notes - {book.title}</h3>
                 <textarea
-                  className="mt-2 w-full flex-1 p-2 border rounded resize-none"
-                  style={{ minHeight: '80%', borderColor: '#49108B', color: '#49108B' }}
-                  value={editableNotes}
-                  onChange={(e) => setEditableNotes(e.target.value)}
+                    className="w-full p-2 border rounded"
+                    style={{ minHeight: '80%', borderColor: '#49108B', color: '#49108B' }} 
+                    value={editableNotes}
+                    onChange={(e) => setEditableNotes(e.target.value)}
                 />
-                <div className="flex justify-end items-center pt-4">
-                  <button
+            </div>
+            <div className="flex justify-end pt-4">
+                <button
                     onClick={() => setShowNotesModal(false)}
                     className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-300 mr-2"
-                    style={{ backgroundColor: '#E26EE5' }}
-                  >
+                    
+                >
                     Cancel
-                  </button>
-                  <button
+                </button>
+                <button
                     onClick={saveNotes}
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300"
-                    style={{ backgroundColor: '#7E30E1', color: '#F3F8FF' }}
-                  >
+                    className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-300"
+                    
+                >
                     Save
-                  </button>
-                </div>
-              </div>
+                </button>
             </div>
-          )}
+        </div>
+    </div>
+)}
         </div>
       );
       
