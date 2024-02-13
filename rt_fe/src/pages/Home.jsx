@@ -7,24 +7,37 @@ const Home = () => {
     const navigate = useNavigate();
     const [currentReadBooks, setCurrentReadBooks] = useState([]);
     const [readingHistory, setReadingHistory] = useState([]); 
+    const [isModalOpen, setIsModalOpen] = useState(false); 
+    const [editorContent, setEditorContent] = useState("");
 
     const navigateToBookList = () => {
         navigate('/booklist');
     };
 
     const navigateToCurrentRead = () => {
-        navigate('/current-read'); // Replace with your actual route to the current read
+        navigate('/current-read'); 
     };
 
     const navigateToReadingHistory = () => {
-        navigate('/reading-history'); // Replace with your actual route to the reading history
+        navigate('/reading-history');
     };
 
     const navigateToUpdateProgress = (bookId) => {
-        navigate(`/update-progress/${bookId}`); // Replace with your actual route to the update progress page
+        navigate(`/update-progress/${bookId}`);
     };
 
-    // Function to fetch books
+    const toggleModal = () => {
+        if (!isModalOpen) {
+            fetchLearningList();
+        }
+        setIsModalOpen(!isModalOpen);
+    };
+    
+    
+    
+  
+
+
     const fetchBooks = async () => {
         try {
             const response = await fetch(`${HOST}/book/viewBooks`);
@@ -33,7 +46,7 @@ const Home = () => {
             }
             const data = await response.json();
             
-            // Filter books based on status 'Current Read'
+         
             const currentReadBooks = data.books.filter(book => book.status === 'Current Read');
             setCurrentReadBooks(currentReadBooks);
         } catch (error) {
@@ -48,13 +61,55 @@ const Home = () => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
-            setReadingHistory(data.readingRecords); // Set the reading history data
+            setReadingHistory(data.readingRecords); 
         } catch (error) {
             console.error("Error fetching reading history: ", error);
         }
     };
 
-    // This function generates an array of the last 7 days in descending order
+  
+const fetchLearningList = async () => {
+    try {
+        const response = await fetch(`${HOST}/book/learning/1`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setEditorContent(data.learningItem.learning_list);
+    } catch (error) {
+        console.error("Error fetching learning list: ", error);
+    }
+};
+
+
+const handleSaveContent = async () => {
+    try {
+        const response = await fetch(`${HOST}/book/learning/1`, { 
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ learning_list: editorContent }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Save successful:', data);
+        alert('Learning list updated successfully.'); 
+    } catch (error) {
+        console.error("Error saving learning list: ", error);
+        alert('Failed to update learning list.'); 
+    }
+
+    toggleModal(); 
+};
+
+
+
+
     const getLast7Days = () => {
         const dates = [];
         for (let i = 0; i < 7; i++) {
@@ -65,10 +120,10 @@ const Home = () => {
         return dates;
     };
 
-    // Call getLast7Days and store the result in a state
+   
     const [last7Days, setLast7Days] = useState(getLast7Days());
 
-    // Use effect to fetch books on component mount
+
     useEffect(() => {
         fetchBooks();
         fetchReadingHistory();
@@ -80,16 +135,18 @@ const Home = () => {
             <h1 className="text-4xl font-bold mb-4" style={{ color: '#49108B' }}>Reading Tracker</h1>
             <button
                 onClick={navigateToBookList}
-                className="font-bold py-2 px-4 rounded transition duration-300"
+                className="font-bold py-2 px-4 mx-2 rounded transition duration-300"
                 style={{ backgroundColor: '#7E30E1', color: '#F3F8FF' }}
             >
                 View Book List
             </button>
+            <button onClick={toggleModal} className="font-bold py-2 px-4 mx-2 rounded transition duration-300" style={{ backgroundColor: '#7E30E1', color: '#F3F8FF' }}>Things To Learn</button>
+         
         </div>
 
-            {/* Current Read Section */}
+        
            {/* Current Read Section */}
-{/* Current Read Section */}
+
 <div className="my-10 p-6 shadow-lg rounded-lg" style={{ backgroundColor: '#49108B' }}>
 
   <h2 className="text-3xl font-semibold mb-6 text-center" style={{ color: 'gold' }}>Current Read</h2>
@@ -159,8 +216,35 @@ const Home = () => {
     
 </div>
 
+{isModalOpen && (
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+                    <div className="relative top-20 mx-auto p-5 border h-3/4 w-3/4 shadow-lg rounded-md bg-white">
+                        <div className="mt-3 text-center">
+                            <h3 className="text-lg leading-6 font-medium text-gray-900">Things To Learn</h3>
+                            <div className="mt-2">
+                                <textarea
+                                    className="w-full p-2 border rounded"
+                                    style={{ minHeight: '80%'}}
+                                    placeholder="Things To Learn..."
+                                    rows="20"
+                                    value={editorContent}
+                                    onChange={(e) => setEditorContent(e.target.value)}
+                                ></textarea>
+                            </div>
+                            <div className="items-center px-4 py-3">
+                            <button onClick={handleSaveContent} className="px-4 mx-4 py-2 bg-purple-500 text-white text-base font-medium rounded-md w-1/2 shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-900">Save</button>
+                              
+                            <button onClick={toggleModal} className= "my-2 mx-4 px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-1/2 shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-900">Close</button>
+              
+                             
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-            {/* ... other sections ... */}
+
+ 
         </div>
     );
 };

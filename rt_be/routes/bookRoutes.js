@@ -1,5 +1,5 @@
 var express = require('express');
-const { addBook, viewBooks, viewBook, startReading, closeBook, updateProgress, readingHistory, deleteBook, updateBook, updateNotes } = require('../controller/bookController');
+const { addBook, viewBooks, viewBook, startReading, closeBook, updateProgress, readingHistory, deleteBook, updateBook, updateNotes, thingsToLearn, viewThingsToLearn, updateLearningList } = require('../controller/bookController');
 var router = express.Router();
 
 /* GET users listing. */
@@ -17,6 +17,8 @@ router.get('/readingHistory', readingHistory);
 router.delete('/deleteBook/:bookId', deleteBook);
 router.put('/updateBook/:bookId', updateBook);
 router.put('/updateNotes/:bookId', updateNotes);
+router.get('/learning/:id', viewThingsToLearn);
+router.put('/learning/1', updateLearningList);
 
 
 

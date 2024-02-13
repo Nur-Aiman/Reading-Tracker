@@ -1,5 +1,5 @@
 // BookDetails.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { HOST } from '../api';
 import Navbar from '../components/Navbar';
@@ -48,6 +48,14 @@ const BookDetails = () => {
       console.error('Error updating book:', error);
       alert('Failed to update book.');
     });
+  };
+
+  const textareaRef = useRef(null); 
+
+  const scrollToBottom = () => { 
+      if (textareaRef.current) {
+          textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
+      }
   };
   
 
@@ -225,6 +233,7 @@ const saveNotes = () => {
                     <div className="flex-1 overflow-auto p-2">
                         <h3 className="text-lg leading-6 font-medium text-gray-900 text-center mb-4">Notes - {title}</h3>
                         <textarea
+                            ref={textareaRef}
                             className="w-full p-2 border rounded"
                             style={{ minHeight: '80%' }}
                             value={editableNotes}
@@ -232,19 +241,25 @@ const saveNotes = () => {
                         />
                     </div>
                     <div className="flex justify-end pt-4">
-                        <button
-                            onClick={toggleNotesModal}
-                            className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-300 mr-2"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={saveNotes}
-                            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-300"
-                        >
-                            Save
-                        </button>
-                    </div>
+                <button
+                    onClick={scrollToBottom} 
+                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300 mr-2"
+                >
+                    Scroll Bottom
+                </button>
+                <button
+                    onClick={toggleNotesModal}
+                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-300 mr-2"
+                >
+                    Cancel
+                </button>
+                <button
+                    onClick={saveNotes}
+                    className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-300"
+                >
+                    Save
+                </button>
+            </div>
                 </div>
             </div>
         )}

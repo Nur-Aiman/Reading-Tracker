@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import CircularProgressBar from '../components/CircularProgressBar';
 import { HOST } from '../api';
@@ -25,6 +25,16 @@ const UpdateProgress = () => {
             setLastPage(book.page_read);
         }
     }, [book]);
+
+    const notesTextareaRef = useRef(null); 
+
+    const scrollToBottom = () => {
+        
+        const textarea = notesTextareaRef.current;
+        if (textarea) {
+            textarea.scrollTop = textarea.scrollHeight;
+        }
+    };
 
     const fetchBook = async () => {
         try {
@@ -227,6 +237,7 @@ const UpdateProgress = () => {
             <div className="flex-1 overflow-auto p-2">
                 <h3 className="text-lg leading-6 font-medium text-gray-900 text-center mb-4">Notes - {book.title}</h3>
                 <textarea
+                ref={notesTextareaRef} 
                     className="w-full p-2 border rounded"
                     style={{ minHeight: '80%', borderColor: '#49108B', color: 'black' }} 
                     value={editableNotes}
@@ -234,6 +245,8 @@ const UpdateProgress = () => {
                 />
             </div>
             <div className="flex justify-end pt-4">
+            <button onClick={scrollToBottom} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300 mr-2">Scroll Bottom</button> {/* Step 5: Add the "Scroll Bottom" button */}
+              
                 <button
                     onClick={() => setShowNotesModal(false)}
                     className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-300 mr-2"

@@ -312,6 +312,58 @@ updateNotes : async function (req, res)  {
   }
 },
 
+viewThingsToLearn : async function (req, res)  {
+  try {
+    // Execute a query to select the row with id 1
+    const result = await pool.query('SELECT * FROM learning WHERE id = $1', [1]);
+    
+    // Check if the learning item was found
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Learning item not found' });
+    }
+    
+    // Return the learning item
+    res.status(200).json({
+      message: 'Learning item retrieved successfully',
+      learningItem: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error retrieving learning item:', error);
+    res.status(500).json({ message: 'Failed to retrieve learning item' });
+  }
+
+
+},
+
+updateLearningList: async function(req, res) {
+  const { learning_list } = req.body; 
+
+  if (!learning_list) {
+    return res.status(400).json({ message: 'Missing required field: learning_list' });
+  }
+
+  try {
+
+    const updateResult = await pool.query(
+      'UPDATE learning SET learning_list = $1 WHERE id = $2 RETURNING *',
+      [learning_list, 1] 
+    );
+
+    if (updateResult.rows.length === 0) {
+
+      return res.status(404).json({ message: 'Learning item not found' });
+    }
+
+    res.status(200).json({
+      message: 'Learning item updated successfully',
+      learningItem: updateResult.rows[0]
+    });
+  } catch (error) {
+    console.error('Error updating learning item:', error);
+    res.status(500).json({ message: 'Failed to update learning item' });
+  }
+}
+
 
 
 
