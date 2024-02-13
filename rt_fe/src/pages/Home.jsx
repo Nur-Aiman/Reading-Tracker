@@ -226,7 +226,7 @@ const handleSaveContent = async () => {
                                     className="w-full p-2 border rounded"
                                     style={{ minHeight: '80%'}}
                                     placeholder="Things To Learn..."
-                                    rows="20"
+                                    rows="10"
                                     value={editorContent}
                                     onChange={(e) => setEditorContent(e.target.value)}
                                 ></textarea>
