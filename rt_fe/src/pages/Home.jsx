@@ -33,10 +33,6 @@ const Home = () => {
         setIsModalOpen(!isModalOpen);
     };
     
-    
-    
-  
-
 
     const fetchBooks = async () => {
         try {

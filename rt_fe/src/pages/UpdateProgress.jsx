@@ -13,6 +13,12 @@ const UpdateProgress = () => {
     const [lastPage, setLastPage] = useState(0);
     const [showNotesModal, setShowNotesModal] = useState(false);
     const [editableNotes, setEditableNotes] = useState("");
+    const [searchTerm, setSearchTerm] = useState('');
+const [searchResults, setSearchResults] = useState([]);
+const [currentSearchIndex, setCurrentSearchIndex] = useState(-1);
+const [searchResultsMessage, setSearchResultsMessage] = useState('');
+
+
 
 
     useEffect(() => {
@@ -158,6 +164,104 @@ const UpdateProgress = () => {
             alert('Network error. Please try again.');
         }
     };
+
+    const searchNotes = () => {
+        if (!searchTerm.trim()) {
+            setSearchResults([]);
+            setCurrentSearchIndex(-1);
+            setSearchResultsMessage('0 results found');
+            return;
+        }
+    
+        const matches = [];
+        let match;
+        const regex = new RegExp(`(${searchTerm})`, 'gi');
+        
+        while ((match = regex.exec(editableNotes)) != null) {
+            matches.push(match.index);
+        }
+    
+        // After finding matches in searchNotes
+setSearchResults(matches);
+setCurrentSearchIndex(matches.length > 0 ? 0 : -1);
+updateSearchResultsMessage(0, matches.length); // Initial call with the first index
+
+
+
+    
+        if (matches.length > 0) {
+            scrollToSearchResult(matches[0]);
+        }
+    };
+
+    const updateSearchResultsMessage = (currentIndex, totalResults) => {
+        if (totalResults > 0) {
+            // Adjust for human-readable index (starting at 1 instead of 0)
+            setSearchResultsMessage(`${currentIndex + 1} of ${totalResults} results found`);
+        } else {
+            setSearchResultsMessage('0 results found');
+        }
+    };
+    
+    
+    const scrollToSearchResult = (index) => {
+        const textarea = notesTextareaRef.current;
+        if (!textarea || index === undefined) return;
+    
+        textarea.focus();
+    
+        const endIndex = index + searchTerm.length;
+        textarea.setSelectionRange(index, endIndex);
+    
+        const linesUpToIndex = editableNotes.substring(0, index).split("\n");
+        const characterCount = linesUpToIndex.reduce((acc, line) => acc + line.length + 1, 0); // +1 for newline characters
+        const averageCharWidth = textarea.scrollWidth / textarea.value.length;
+        const scrollRatio = characterCount * averageCharWidth / textarea.scrollWidth;
+    
+        textarea.scrollTop = scrollRatio * textarea.scrollHeight - textarea.clientHeight / 4;
+    };
+    
+    
+    
+    
+    
+    
+    
+    useEffect(() => {
+        if (searchResults.length > 0 && currentSearchIndex >= 0) {
+            scrollToSearchResult(searchResults[currentSearchIndex]);
+        }
+    }, [searchResults, currentSearchIndex]);
+    
+    
+    const handleNextSearchResult = () => {
+        setCurrentSearchIndex(prev => (prev + 1) % searchResults.length);
+    };
+    
+    const handlePrevSearchResult = () => {
+        setCurrentSearchIndex(prev => (prev - 1 + searchResults.length) % searchResults.length);
+    };
+
+    // Adjusted from previous examples
+
+    const handleNextPrevSearchResult = (direction) => {
+        setCurrentSearchIndex(prevIndex => {
+            const newIndex = direction === 'next'
+                ? (prevIndex + 1) % searchResults.length
+                : (prevIndex - 1 + searchResults.length) % searchResults.length;
+            
+            // Call scrollToSearchResult directly with the newIndex's position to ensure synchronization
+            scrollToSearchResult(searchResults[newIndex]);
+            // Update the message with the new index position
+            updateSearchResultsMessage(newIndex, searchResults.length);
+    
+            return newIndex;
+        });
+    };
+    
+
+    
+    
     
     
     
@@ -231,40 +335,61 @@ const UpdateProgress = () => {
          
       
           {/* Notes Modal */}
-          {showNotesModal && (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center overflow-y-auto h-full w-full" id="my-modal">
-        <div className="relative m-auto p-5 border w-11/12 max-w-4xl h-5/6 shadow-lg rounded-md bg-white flex flex-col">
-            <div className="flex-1 overflow-auto p-2">
-                <h3 className="text-lg leading-6 font-medium text-gray-900 text-center mb-4">Notes - {book.title}</h3>
-                <textarea
-                ref={notesTextareaRef} 
-                    className="w-full p-2 border rounded"
-                    style={{ minHeight: '80%', borderColor: '#49108B', color: 'black' }} 
-                    value={editableNotes}
-                    onChange={(e) => setEditableNotes(e.target.value)}
-                />
-            </div>
-            <div className="flex justify-end pt-4">
-            <button onClick={scrollToBottom} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300 mr-2">Scroll Bottom</button> {/* Step 5: Add the "Scroll Bottom" button */}
-              
-                <button
-                    onClick={() => setShowNotesModal(false)}
-                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-300 mr-2"
-                    
-                >
-                    Cancel
-                </button>
-                <button
-                    onClick={saveNotes}
-                    className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-300"
-                    
-                >
-                    Save
-                </button>
-            </div>
+          {/* Notes Modal */}
+{showNotesModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center overflow-y-auto h-full w-full" id="my-modal">
+    <div className="relative m-auto p-5 border w-11/12 max-w-4xl h-5/6 shadow-lg rounded-md bg-white flex flex-col">
+      <div className="flex-1 overflow-auto p-2">
+        <h3 className="text-lg leading-6 font-medium text-gray-900 text-center mb-4">Notes - {book.title}</h3>
+        {/* Before the textarea for notes */}
+        <div className="flex space-x-2 mb-4 items-center">
+          <input
+            type="text"
+            className="border p-1 flex-grow"
+            placeholder="Search notes..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <button
+            onClick={() => searchNotes()}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Search
+          </button>
         </div>
+        {/* Display search results message */}
+        <div className="flex justify-between items-center mb-4">
+          <p className="text-sm">{searchResultsMessage}</p>
+          <div className="flex space-x-2">
+            <button onClick={() => handleNextPrevSearchResult('prev')} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+              Back
+            </button>
+            <button onClick={() => handleNextPrevSearchResult('next')} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+              Next
+            </button>
+          </div>
+        </div>
+        <textarea
+          ref={notesTextareaRef}
+          className="w-full p-2 border rounded"
+          style={{ minHeight: '80%', borderColor: '#49108B', color: 'black' }}
+          value={editableNotes}
+          onChange={(e) => setEditableNotes(e.target.value)}
+        />
+      </div>
+      <div className="flex justify-end pt-4">
+        <button onClick={scrollToBottom} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300 mr-2">Scroll Bottom</button>
+        <button onClick={() => setShowNotesModal(false)} className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-300 mr-2">
+          Cancel
+        </button>
+        <button onClick={saveNotes} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-300">
+          Save
+        </button>
+      </div>
     </div>
+  </div>
 )}
+
         </div>
       );
       
