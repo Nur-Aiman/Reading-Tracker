@@ -338,7 +338,7 @@ updateSearchResultsMessage(0, matches.length); // Initial call with the first in
           {/* Notes Modal */}
 {showNotesModal && (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center overflow-y-auto h-full w-full" id="my-modal">
-    <div className="relative m-auto p-5 border w-11/12 max-w-4xl h-5/6 shadow-lg rounded-md bg-white flex flex-col">
+    <div className="relative m-auto p-5 border w-11/12 max-w-4xl h-full shadow-lg rounded-md bg-white flex flex-col">
       <div className="flex-1 overflow-auto p-2">
         <h3 className="text-lg leading-6 font-medium text-gray-900 text-center mb-4">Notes - {book.title}</h3>
         {/* Before the textarea for notes */}
@@ -361,10 +361,10 @@ updateSearchResultsMessage(0, matches.length); // Initial call with the first in
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm">{searchResultsMessage}</p>
           <div className="flex space-x-2">
-            <button onClick={() => handleNextPrevSearchResult('prev')} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+            <button onClick={() => handleNextPrevSearchResult('prev')} className="bg-gray-500 hover:bg-gray-700 text-white font-bold px-4 rounded">
               Back
             </button>
-            <button onClick={() => handleNextPrevSearchResult('next')} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+            <button onClick={() => handleNextPrevSearchResult('next')} className="bg-gray-500 hover:bg-gray-700 text-white font-bold px-4 rounded">
               Next
             </button>
           </div>
@@ -372,7 +372,7 @@ updateSearchResultsMessage(0, matches.length); // Initial call with the first in
         <textarea
           ref={notesTextareaRef}
           className="w-full p-2 border rounded"
-          style={{ minHeight: '80%', borderColor: '#49108B', color: 'black' }}
+          style={{ minHeight: '84%', borderColor: '#49108B', color: 'black' }}
           value={editableNotes}
           onChange={(e) => setEditableNotes(e.target.value)}
         />
