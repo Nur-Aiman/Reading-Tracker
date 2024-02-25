@@ -378,11 +378,11 @@ updateSearchResultsMessage(0, matches.length); // Initial call with the first in
         />
       </div>
       <div className="flex justify-end pt-4">
-        <button onClick={scrollToBottom} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300 mr-2">Scroll Bottom</button>
-        <button onClick={() => setShowNotesModal(false)} className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-300 mr-2">
+        <button onClick={scrollToBottom} className="bg-blue-500 hover:bg-blue-700 text-white font-bold px-4 rounded transition duration-300 mr-2">Scroll Bottom</button>
+        <button onClick={() => setShowNotesModal(false)} className="bg-red-500 hover:bg-red-700 text-white font-bold px-4 rounded transition duration-300 mr-2">
           Cancel
         </button>
-        <button onClick={saveNotes} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-300">
+        <button onClick={saveNotes} className="bg-green-500 hover:bg-green-700 text-white font-bold px-4 rounded transition duration-300">
           Save
         </button>
       </div>
