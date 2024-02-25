@@ -340,19 +340,19 @@ updateSearchResultsMessage(0, matches.length); // Initial call with the first in
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center overflow-y-auto h-full w-full" id="my-modal">
     <div className="relative m-auto p-5 border w-11/12 max-w-4xl h-full shadow-lg rounded-md bg-white flex flex-col">
       <div className="flex-1 overflow-auto p-2">
-        <h3 className="text-lg leading-6 font-medium text-gray-900 text-center mb-4">Notes - {book.title}</h3>
+        <h3 className="text-lg leading-6 font-medium text-gray-900 text-center mb-2">Notes - {book.title}</h3>
         {/* Before the textarea for notes */}
-        <div className="flex space-x-2 mb-4 items-center">
+        <div className="flex space-x-2 mb-2 items-center">
           <input
             type="text"
-            className="border p-1 flex-grow"
+            className="border flex-grow"
             placeholder="Search notes..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           <button
             onClick={() => searchNotes()}
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold px-4 rounded"
           >
             Search
           </button>
