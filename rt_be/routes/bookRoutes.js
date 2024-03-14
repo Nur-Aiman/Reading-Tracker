@@ -10,18 +10,18 @@ router.get('/', function(req, res, next) {
 
 router.post('/registerUser', registerUser);
 router.post('/loginUser', loginUser);
-router.post('/addBook',authenticateToken, addBook); 
-router.get('/viewBook/:bookId',authenticateToken, viewBook);
-router.put('/updateBook/:bookId',authenticateToken, updateBook);
-router.put('/startReading/:bookId',authenticateToken, startReading);
-router.get('/viewBooks',authenticateToken, viewBooks);
-router.put('/closeBook/:bookId',authenticateToken, closeBook);
-router.get('/learning/:userId',authenticateToken, viewThingsToLearn);
-router.put('/learning/:userId',authenticateToken, updateLearningList); 
-router.put('/updateNotes/:bookId',authenticateToken, updateNotes);
-router.get('/readingHistory',authenticateToken, readingHistory); 
-router.put('/updateProgress/:bookId',authenticateToken, updateProgress);
-router.delete('/deleteBook/:bookId',authenticateToken, deleteBook);
+router.post('/addBook', addBook); 
+router.get('/viewBook/:bookId', viewBook);
+router.put('/updateBook/:bookId', updateBook);
+router.put('/startReading/:bookId', startReading);
+router.get('/viewBooks', viewBooks);
+router.put('/closeBook/:bookId', closeBook);
+router.get('/learning/:userId', viewThingsToLearn);
+router.put('/learning/:userId', updateLearningList); 
+router.put('/updateNotes/:bookId', updateNotes);
+router.get('/readingHistory', readingHistory); 
+router.put('/updateProgress/:bookId', updateProgress);
+router.delete('/deleteBook/:bookId', deleteBook);
 
 
 
