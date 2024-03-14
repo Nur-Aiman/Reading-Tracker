@@ -14,21 +14,21 @@ const Navbar = () => {
             display: 'flex', 
             justifyContent: 'flex-end', 
     
-            backgroundColor: '#F3F8FF', // Light blue background
+            backgroundColor: '#F3F8FF',
         }}>
             <button onClick={navigateHome} className="floating-button" style={{ 
-                width: '70px', // Fixed width
-                height: '70px', // Fixed height to maintain circle shape
+                width: '70px', 
+                height: '70px', 
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: '16px',
-                backgroundColor: '#7E30E1', // Dark purple background
-                color: '#F3F8FF', // Light blue text
+                backgroundColor: '#7E30E1',
+                color: '#F3F8FF', 
                 border: 'none',
-                borderRadius: '50%', // Circle shape
+                borderRadius: '50%',
                 cursor: 'pointer',
-                boxShadow: '0 2px 4px #49108B', // Deeper purple shadow
+                boxShadow: '0 2px 4px #49108B',
             }}>
                 Home
             </button>

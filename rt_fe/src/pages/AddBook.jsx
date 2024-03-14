@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Cookies from 'js-cookie';
+import { jwtDecode } from 'jwt-decode';
 import { HOST } from '../api';
 import Navbar from '../components/Navbar';
 
@@ -10,6 +12,15 @@ const AddBook = () => {
         author: '',
         total_page: ''
     });
+    const [userId, setUserId] = useState(null);
+
+    useEffect(() => {
+        const token = Cookies.get('token');
+        if (token) {
+            const decodedToken = jwtDecode(token);
+            setUserId(decodedToken.id);
+        }
+    }, []);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -18,17 +29,24 @@ const AddBook = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Set default values for status, page_read, and notes
+        if (!userId) {
+            alert('User ID is not available. Please log in again.');
+            return;
+        }
+
+      
         const bookData = {
             ...formData,
-            status: 'To Be Read',   // Default status
-            page_read: 0,           // Default page_read
-            notes: '-'              // Default notes
+            status: 'To Be Read',   
+            page_read: 0,           
+            notes: '-',             
+            user_id: userId,
         };
 
         try {
             const response = await fetch(`${HOST}/book/addBook`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -40,7 +58,7 @@ const AddBook = () => {
             } else {
                 alert('Book added successfully!');
                 console.log('Book added successfully');
-                // Reset the form fields
+     
                 setFormData({ title: '', author: '', total_page: '' });
                 navigate('/booklist');
             }

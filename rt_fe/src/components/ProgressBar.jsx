@@ -2,16 +2,16 @@ import React from 'react';
 import '../index.css';
 
 const ProgressBar = ({ percentage }) => {
-    // Determine color based on the percentage
+
     const getColor = (percentage) => {
         if (percentage < 25) {
-            return '#ff5722'; // Red-Orange
+            return '#ff5722'; 
         } else if (percentage < 50) {
-            return '#ff9800'; // Orange
+            return '#ff9800'; 
         } else if (percentage < 75) {
-            return '#ffc107'; // Amber
+            return '#ffc107'; 
         } else {
-            return '#4caf50'; // Green
+            return '#4caf50'; 
         }
     };
 
@@ -31,7 +31,7 @@ const ProgressBar = ({ percentage }) => {
         padding: '5px',
         color: 'white',
         fontWeight: 'bold',
-        display: percentage > 5 ? 'block' : 'none' // Hide text if bar is too small
+        display: percentage > 5 ? 'block' : 'none'
     };
 
     return (

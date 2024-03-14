@@ -1,4 +1,4 @@
-// BookDetails.jsx
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { HOST } from '../api';
@@ -17,15 +17,95 @@ const BookDetails = () => {
     const [totalPages, setTotalPages] = useState('');
     const [pagesRead, setPagesRead] = useState('');
     const [editableNotes, setEditableNotes] = useState("");
+    const [searchTerm, setSearchTerm] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [currentSearchIndex, setCurrentSearchIndex] = useState(-1);
+    const [searchResultsMessage, setSearchResultsMessage] = useState('');
+
 
     const toggleEditMode = () => {
       setEditMode(!editMode);
   };
 
+  const searchNotes = () => {
+    if (!searchTerm.trim()) {
+        setSearchResults([]);
+        setCurrentSearchIndex(-1);
+        setSearchResultsMessage('0 results found');
+        return;
+    }
+
+    const matches = [];
+    let match;
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    
+    while ((match = regex.exec(editableNotes)) != null) {
+        matches.push(match.index);
+    }
+
+    setSearchResults(matches);
+    setCurrentSearchIndex(matches.length > 0 ? 0 : -1);
+    updateSearchResultsMessage(0, matches.length);
+    
+    if (matches.length > 0) {
+        scrollToSearchResult(matches[0]);
+    }
+};
+
+
+
+const updateSearchResultsMessage = (currentIndex, totalResults) => {
+    if (totalResults > 0) {
+
+        setSearchResultsMessage(`${currentIndex + 1} of ${totalResults} results found`);
+    } else {
+        setSearchResultsMessage('0 results found');
+    }
+};
+
+const handleNextSearchResult = () => {
+    setCurrentSearchIndex(prev => (prev + 1) % searchResults.length);
+};
+
+const handlePrevSearchResult = () => {
+    setCurrentSearchIndex(prev => (prev - 1 + searchResults.length) % searchResults.length);
+};
+
+const handleNextPrevSearchResult = (direction) => {
+    setCurrentSearchIndex((prevIndex) => {
+        let newIndex;
+        if (direction === 'next') {
+            newIndex = (prevIndex + 1) % searchResults.length;
+        } else {
+            newIndex = (prevIndex - 1 + searchResults.length) % searchResults.length;
+        }
+        scrollToSearchResult(searchResults[newIndex]);
+        updateSearchResultsMessage(newIndex, searchResults.length);
+        return newIndex;
+    });
+};
+
+const scrollToSearchResult = (index) => {
+    const textarea = textareaRef.current;
+    if (!textarea || index === undefined) return;
+  
+    textarea.focus();
+    const endIndex = index + searchTerm.length;
+    textarea.setSelectionRange(index, endIndex);
+  
+    const scrollPosition = textarea.scrollHeight * (index / editableNotes.length);
+    textarea.scrollTop = scrollPosition;
+  };
+
+
+
+
+
   const saveChanges = () => {
-    // Validation or any other logic
+  
     fetch(`${HOST}/book/updateBook/${bookId}`, {
       method: 'PUT',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -41,8 +121,8 @@ const BookDetails = () => {
     })
     .then(data => {
       alert('Book updated successfully!');
-      setBookDetails(data.book); // Update the book details state
-      setEditMode(false); // Exit edit mode
+      setBookDetails(data.book); 
+      setEditMode(false);
     })
     .catch(error => {
       console.error('Error updating book:', error);
@@ -60,8 +140,8 @@ const BookDetails = () => {
   
 
     useEffect(() => {
-        // Replace with the actual API call
-        fetch(`${HOST}/book/viewBook/${bookId}`)
+    
+        fetch(`${HOST}/book/viewBook/${bookId}`,{method: 'GET', credentials: 'include'})
             .then(response => response.json())
             .then(data => setBookDetails(data.book))
             .catch(error => console.error('Error fetching book details:', error));
@@ -76,31 +156,31 @@ const BookDetails = () => {
       }
   }, [bookDetails]);
 
-  // Handlers for change events on inputs
+
   const handleTitleChange = (e) => setTitle(e.target.value);
   const handleAuthorChange = (e) => setAuthor(e.target.value);
   const handleTotalPagesChange = (e) => setTotalPages(e.target.value);
 
 
     const handleStartReading = () => {
-        fetch(`${HOST}/book/startReading/${bookId}`, { method: 'PUT' })
+        fetch(`${HOST}/book/startReading/${bookId}`, { method: 'PUT', credentials:'include' })
             .then(response => response.json())
             .then(data => {
                 console.log('Book status updated:', data);
-                setBookDetails(data.book); // Update the local state to reflect the change
-                alert('You have started reading the book.'); // Display pop-up message
-                navigate('/'); // Navigate to the Home page
+                setBookDetails(data.book); 
+                alert('You have started reading the book.'); 
+                navigate('/'); 
             })
             .catch(error => {
                 console.error('Error starting to read the book:', error);
-                alert('Failed to start reading the book.'); // Display error message
+                alert('Failed to start reading the book.'); 
             });
     };
 
-    // Function to handle the deletion of the book
+   
     const handleDeleteBook = () => {
       if(window.confirm("Are you sure you want to delete this book?")) {
-          fetch(`${HOST}/book/deleteBook/${bookId}`, { method: 'DELETE' })
+          fetch(`${HOST}/book/deleteBook/${bookId}`, { method: 'DELETE', credentials:'include' })
               .then(response => {
                   if (!response.ok) {
                       throw new Error('Network response was not ok');
@@ -109,7 +189,7 @@ const BookDetails = () => {
               })
               .then(() => {
                   alert('Book deleted successfully');
-                  navigate('/booklist'); // Navigate back to the book list
+                  navigate('/booklist');
               })
               .catch(error => {
                   console.error('Error deleting the book:', error);
@@ -121,7 +201,7 @@ const BookDetails = () => {
   const toggleNotesModal = () => {
     setShowNotesModal(!showNotesModal);
     if (!showNotesModal) {
-        // When opening the modal, populate editableNotes with current notes
+     
         setEditableNotes(bookDetails ? bookDetails.notes : "");
     }
 };
@@ -129,6 +209,7 @@ const BookDetails = () => {
 const saveNotes = () => {
   fetch(`${HOST}/book/updateNotes/${bookId}`, {
       method: 'PUT',
+      credentials: 'include',
       headers: {
           'Content-Type': 'application/json',
       },
@@ -144,8 +225,8 @@ const saveNotes = () => {
   })
   .then(data => {
       alert('Notes updated successfully!');
-      setShowNotesModal(false); // Close the modal after saving
-      setBookDetails(data.book); // Update the book details state with the updated notes
+      setShowNotesModal(false); 
+      setBookDetails(data.book); 
   })
   .catch(error => {
       console.error('Error updating notes:', error);
@@ -220,7 +301,7 @@ const saveNotes = () => {
               {editMode ? 'Save Changes' : 'Edit Details'}
           </button>
 
-          {/* Delete Book Button */}
+       
           <button 
               onClick={handleDeleteBook}
               className="w-full bg-red-600 hover:bg-red-800 text-white font-bold py-2 px-4 rounded transition duration-300 mt-3"
@@ -228,41 +309,64 @@ const saveNotes = () => {
               Delete Book
           </button>
           {showNotesModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center overflow-y-auto h-full w-full" id="my-modal">
-                <div className="relative m-auto p-5 border w-11/12 max-w-4xl h-5/6 shadow-lg rounded-md bg-white flex flex-col">
-                    <div className="flex-1 overflow-auto p-2">
-                        <h3 className="text-lg leading-6 font-medium text-gray-900 text-center mb-4">Notes - {title}</h3>
-                        <textarea
-                            ref={textareaRef}
-                            className="w-full p-2 border rounded"
-                            style={{ minHeight: '80%' }}
-                            value={editableNotes}
-                            onChange={(e) => setEditableNotes(e.target.value)}
-                        />
-                    </div>
-                    <div className="flex justify-end pt-4">
-                <button
-                    onClick={scrollToBottom} 
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300 mr-2"
-                >
-                    Scroll Bottom
-                </button>
-                <button
-                    onClick={toggleNotesModal}
-                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-300 mr-2"
-                >
-                    Cancel
-                </button>
-                <button
-                    onClick={saveNotes}
-                    className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-300"
-                >
-                    Save
-                </button>
-            </div>
-                </div>
-            </div>
-        )}
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center overflow-y-auto h-full w-full" id="my-modal">
+    <div className="relative m-auto p-5 border w-11/12 max-w-4xl h-5/6 shadow-lg rounded-md bg-white flex flex-col">
+      <div className="flex-1 overflow-auto p-2">
+        <h3 className="text-lg leading-6 font-medium text-gray-900 text-center mb-2">Notes - {title}</h3>
+        
+        <div className="flex space-x-2 mb-2 items-center">
+          <input
+            type="text"
+            className="border flex-grow"
+            placeholder="Search notes..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <button
+            onClick={searchNotes}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold px-4 rounded"
+          >
+            Search
+          </button>
+        </div>
+        
+        <div className="flex justify-between items-center mb-4">
+          <p className="text-sm">{searchResultsMessage}</p>
+          <div className="flex space-x-2">
+            <button  onClick={() => handleNextPrevSearchResult('prev')} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+              Previous
+            </button>
+            <button onClick={() => handleNextPrevSearchResult('next')} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+              Next
+            </button>
+          </div>
+        </div>
+        
+        <textarea
+          ref={textareaRef}
+          className="w-full p-2 border rounded"
+          style={{ minHeight: '84%', borderColor: '#49108B', color: 'black' }}
+          value={editableNotes}
+          onChange={(e) => setEditableNotes(e.target.value)}
+        />
+      </div>
+      
+      <div className="flex justify-end pt-4">
+        <button onClick={scrollToBottom} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300 mr-2">
+          Scroll Bottom
+        </button>
+        <button onClick={() => setShowNotesModal(false)} className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-300 mr-2">
+          Cancel
+        </button>
+        <button onClick={saveNotes} className="bg-green-500 hover:bg-green-700 text-white font-bold px-4 rounded transition duration-300">
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
 
           
         </div>

@@ -1,6 +1,11 @@
 var express = require('express')
 const connection = require('../config/database')
 const { query, pool } = require('../config/database')
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+
+
 
 const formatDate = (dateString) => {
   const date = new Date(dateString);
@@ -10,18 +15,88 @@ const formatDate = (dateString) => {
 
 module.exports = {
 
-  addBook: async function addBook(req, res) {
-    const { title, author, total_page, status, page_read, notes } = req.body;
-
+  registerUser: async function(req, res) {
+    const { email, password } = req.body;
   
-    if (!title || !author || !total_page || !status || page_read === undefined) {
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+  
+    try {
+      const existingUser = await pool.query('SELECT * FROM "user" WHERE email = $1', [email]);
+  
+      if (existingUser.rows.length > 0) {
+        return res.status(400).json({ message: 'User already exists with the provided email' });
+      }
+  
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+  
+      const newUser = await pool.query(
+        'INSERT INTO "user" (email, password) VALUES ($1, $2) RETURNING id, email',
+        [email, hashedPassword]
+      );
+  
+      res.status(201).json({
+        message: 'User registered successfully',
+        user: newUser.rows[0]
+      });
+    } catch (error) {
+      console.error('Error registering user:', error);
+      res.status(500).json({ message: 'Failed to register user' });
+    }
+  },
+  
+
+  loginUser: async function(req, res) {
+    const { email, password } = req.body;
+  
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+  
+    try {
+      const userResult = await pool.query('SELECT * FROM "user" WHERE email = $1', [email]);
+  
+      if (userResult.rows.length === 0) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      const user = userResult.rows[0];
+      const isMatch = await bcrypt.compare(password, user.password);
+  
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Incorrect password' });
+      }
+  
+
+      const token = jwt.sign({ id: user.id, email: user.email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '24h' });
+  
+
+      res.json({
+        message: 'Login successful',
+        user: {
+          email: user.email,
+          token: token
+        }
+      });
+    } catch (error) {
+      console.error('Error logging in:', error);
+      res.status(500).json({ message: 'Failed to log in' });
+    }
+  },
+
+  addBook: async function addBook(req, res) {
+    const { title, author, total_page, status, page_read, notes, user_id } = req.body;
+  
+    if (!title || !author || !total_page || !status || page_read === undefined || !user_id) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
   
     try {
       const result = await pool.query(
-        'INSERT INTO Book (title, author, total_page, status, page_read, notes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-        [title, author, total_page, status, page_read, notes]
+        'INSERT INTO Book (title, author, total_page, status, page_read, notes, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+        [title, author, total_page, status, page_read, notes, user_id]
       );
   
       const newBook = result.rows[0];
@@ -34,20 +109,28 @@ module.exports = {
       res.status(500).json({ message: 'Failed to add new book' });
     }
   },
+  
 
   viewBooks: async function viewBooks(req, res) {
-    try {
-      const result = await pool.query('SELECT * FROM Book');
-      const books = result.rows;
-      res.status(200).json({
-        message: 'Books retrieved successfully',
-        books: books
-      });
-    } catch (error) {
-      console.error('Error retrieving books:', error);
-      res.status(500).json({ message: 'Failed to retrieve books' });
+    const userId = req.query.userId; 
+    console.log(userId)
+    if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
     }
-  },
+
+    try {
+        const result = await pool.query('SELECT * FROM Book WHERE user_id = $1', [userId]);
+        const books = result.rows;
+        res.status(200).json({
+            message: 'Books retrieved successfully',
+            books: books
+        });
+    } catch (error) {
+        console.error('Error retrieving books:', error);
+        res.status(500).json({ message: 'Failed to retrieve books' });
+    }
+},
+
 
   viewBook: async function (req, res) {
     const { bookId } = req.params;
@@ -110,7 +193,7 @@ closeBook: async function (req, res) {
 
 updateProgress: async function (req, res) {
   const { bookId } = req.params;
-  const { initialPage, lastPage } = req.body; // Retrieve initialPage from the body
+  const { initialPage, lastPage, userId } = req.body; 
   const currentDate = new Date().toISOString().slice(0, 10);
 
   try {
@@ -124,7 +207,7 @@ updateProgress: async function (req, res) {
       return res.status(400).json({ message: "Invalid parameters." });
     }
 
-    // Retrieve book details including title and author
+  
     const bookQuery = 'SELECT title, author, total_page FROM Book WHERE id = $1';
     const bookResult = await pool.query(bookQuery, [bookIdInt]);
 
@@ -145,7 +228,7 @@ updateProgress: async function (req, res) {
 
     const updatedBook = await pool.query(updateBookQuery, [lastPageInt, total_page, bookIdInt]);
 
-    const initialPageInt = parseInt(initialPage, 10); // Parse initialPage
+    const initialPageInt = parseInt(initialPage, 10);
   if (isNaN(initialPageInt)) {
     await pool.query('ROLLBACK');
     return res.status(400).json({ message: "Invalid initialPage, it must be an integer." });
@@ -173,11 +256,11 @@ updateProgress: async function (req, res) {
       await pool.query(updateHistoryQuery, [lastPageInt, title, author, bookIdInt, currentDate]);
     } else {
       const insertHistoryQuery = `
-      INSERT INTO reading_history (book_id, date, book_title, author, start_page, end_page)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO reading_history (book_id, date, book_title, author, start_page, end_page, user_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *;
     `;
-    await pool.query(insertHistoryQuery, [bookIdInt, currentDate, title, author, initialPageInt, lastPageInt]); // Use initialPageInt here
+    await pool.query(insertHistoryQuery, [bookIdInt, currentDate, title, author, initialPageInt, lastPageInt, userId]); 
   }
 
     await pool.query('COMMIT');
@@ -194,35 +277,42 @@ updateProgress: async function (req, res) {
 
 
 readingHistory: async function (req, res) {
+  const userId = req.query.userId;
+  console.log('history', userId)
+
+  if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+  }
+
   try {
-    const query = `
-      SELECT id, date, book_id, book_title, author, start_page, end_page, last_content_read
+      const query = `
+      SELECT *
       FROM reading_history
-      WHERE date >= CURRENT_DATE - INTERVAL '7 days'
+      WHERE user_id = $1
       ORDER BY date DESC;
-    `;
+      `;
 
-    const result = await pool.query(query);
+      const result = await pool.query(query, [userId]);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'No reading records found in the last 7 days' });
-    }
+      if (result.rows.length === 0) {
+          return res.status(404).json({ message: 'No reading records found for the user in the last 7 days' });
+      }
 
-    // Format the readingRecords dates correctly
-    const readingRecords = result.rows.map(record => ({
-      ...record,
-      date: formatDate(record.date)
-    }));
+      const readingRecords = result.rows.map(record => ({
+          ...record,
+          date: formatDate(record.date)
+      }));
 
-    res.json({
-      message: 'Reading records retrieved successfully',
-      readingRecords: readingRecords
-    });
+      res.json({
+          message: 'Reading records retrieved successfully',
+          readingRecords: readingRecords
+      });
   } catch (error) {
-    console.error('Error retrieving reading history:', error);
-    res.status(500).json({ message: 'Failed to retrieve reading history' });
+      console.error('Error retrieving reading history:', error);
+      res.status(500).json({ message: 'Failed to retrieve reading history' });
   }
 },
+
 
 
 deleteBook: async function (req, res) {
@@ -252,16 +342,16 @@ updateBook : async function (req, res) {
   const { bookId } = req.params;
   const { title, author, total_pages } = req.body;
 
-  // Validate the inputs as necessary
+
   if (!title || !author || !total_pages) {
     return res.status(400).json({ message: 'Missing required book details.' });
   }
 
   try {
-    // Begin transaction
+   
     await pool.query('BEGIN');
 
-    // Update the book details in the database
+   
     const updateQuery = `
       UPDATE book
       SET title = $1, author = $2, total_page = $3
@@ -275,11 +365,11 @@ updateBook : async function (req, res) {
       return res.status(404).json({ message: 'Book not found.' });
     }
 
-    // Commit the transaction
+   
     await pool.query('COMMIT');
     res.status(200).json({ message: 'Book updated successfully.', book: result.rows[0] });
   } catch (error) {
-    // If an error occurs, rollback the transaction
+
     await pool.query('ROLLBACK');
     res.status(500).json({ message: 'Failed to update the book.', error: error.message });
   }
@@ -290,18 +380,18 @@ updateNotes : async function (req, res)  {
   const { notes } = req.body;
 
   try {
-      // Perform the update query
+  
       const updateResult = await pool.query(
           'UPDATE Book SET notes = $1 WHERE id = $2 RETURNING *',
           [notes, bookId]
       );
 
-      // Check if the book was found and updated
+
       if (updateResult.rows.length === 0) {
           return res.status(404).json({ message: 'Book not found.' });
       }
 
-      // Return the updated book
+    
       res.json({
           message: 'Notes updated successfully.',
           book: updateResult.rows[0]
@@ -312,57 +402,77 @@ updateNotes : async function (req, res)  {
   }
 },
 
-viewThingsToLearn : async function (req, res)  {
-  try {
-    // Execute a query to select the row with id 1
-    const result = await pool.query('SELECT * FROM learning WHERE id = $1', [1]);
-    
-    // Check if the learning item was found
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Learning item not found' });
-    }
-    
-    // Return the learning item
-    res.status(200).json({
-      message: 'Learning item retrieved successfully',
-      learningItem: result.rows[0]
-    });
-  } catch (error) {
-    console.error('Error retrieving learning item:', error);
-    res.status(500).json({ message: 'Failed to retrieve learning item' });
+viewThingsToLearn: async function (req, res) {
+  const userId = req.params.userId; 
+
+  if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
   }
 
-
+  try {
+      const result = await pool.query('SELECT * FROM learning WHERE user_id = $1', [userId]);
+      
+      if (result.rows.length === 0) {
+          return res.status(404).json({ message: 'Learning item not found for the user' });
+      }
+      
+      res.status(200).json({
+          message: 'Learning item retrieved successfully',
+          learningItem: result.rows[0]
+      });
+  } catch (error) {
+      console.error('Error retrieving learning item:', error);
+      res.status(500).json({ message: 'Failed to retrieve learning item' });
+  }
 },
 
+
 updateLearningList: async function(req, res) {
-  const { learning_list } = req.body; 
+  const { learning_list } = req.body;
+  const userId = req.params.userId;
 
   if (!learning_list) {
-    return res.status(400).json({ message: 'Missing required field: learning_list' });
+      return res.status(400).json({ message: 'Missing required field: learning_list' });
   }
 
   try {
+    
+      const updateResult = await pool.query(
+          'UPDATE learning SET learning_list = $1 WHERE user_id = $2 RETURNING *',
+          [learning_list, userId]
+      );
 
-    const updateResult = await pool.query(
-      'UPDATE learning SET learning_list = $1 WHERE id = $2 RETURNING *',
-      [learning_list, 1] 
-    );
+      if (updateResult.rowCount === 0) {
+    
+          const insertResult = await pool.query(
+              'INSERT INTO learning (user_id, learning_list) VALUES ($1, $2) RETURNING *',
+              [userId, learning_list]
+          );
 
-    if (updateResult.rows.length === 0) {
+          if (insertResult.rows.length === 0) {
+              return res.status(404).json({ message: 'Failed to create learning item' });
+          }
 
-      return res.status(404).json({ message: 'Learning item not found' });
-    }
+   
+          return res.status(201).json({
+              message: 'Learning item created successfully',
+              learningItem: insertResult.rows[0]
+          });
+      }
 
-    res.status(200).json({
-      message: 'Learning item updated successfully',
-      learningItem: updateResult.rows[0]
-    });
+    
+      res.status(200).json({
+          message: 'Learning item updated successfully',
+          learningItem: updateResult.rows[0]
+      });
   } catch (error) {
-    console.error('Error updating learning item:', error);
-    res.status(500).json({ message: 'Failed to update learning item' });
+      console.error('Error updating/inserting learning item:', error);
+      res.status(500).json({ message: 'Failed to update/insert learning item' });
   }
 }
+
+
+
 
 
 

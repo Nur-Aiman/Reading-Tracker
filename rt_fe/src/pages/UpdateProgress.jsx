@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import CircularProgressBar from '../components/CircularProgressBar';
 import { HOST } from '../api';
 import Navbar from '../components/Navbar';
+import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie';
 
 
 const UpdateProgress = () => {
@@ -44,7 +46,7 @@ const [searchResultsMessage, setSearchResultsMessage] = useState('');
 
     const fetchBook = async () => {
         try {
-            const response = await fetch(`${HOST}/book/viewBook/${bookId}`);
+            const response = await fetch(`${HOST}/book/viewBook/${bookId}`, { credentials: 'include' });
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -55,21 +57,37 @@ const [searchResultsMessage, setSearchResultsMessage] = useState('');
         }
     };
 
-    // Client side: Update the handleSubmit function to send notes
+    
 
     const handleSubmit = async (e) => {
         e.preventDefault();
     
+      
+        const token = Cookies.get('token');
+        if (!token) {
+            alert('You are not logged in. Please log in to update progress.');
+            return;
+        }
+
+    
+       
+        const decoded = jwtDecode(token);
+        const userId = decoded.id; 
+        
+        console.log(userId)
+
         const progressData = {
             initialPage: initialPage,
-            lastPage: parseInt(lastPage, 10) // Ensure lastPage is an integer
+            lastPage: parseInt(lastPage, 10),
+            userId: userId, 
         };
     
         try {
             const response = await fetch(`${HOST}/book/updateProgress/${bookId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(progressData)
+                body: JSON.stringify(progressData),
+                credentials: 'include',
             });
     
             const data = await response.json();
@@ -94,7 +112,8 @@ const [searchResultsMessage, setSearchResultsMessage] = useState('');
     const handleCloseBook = () => {
         fetch(`${HOST}/book/closeBook/${bookId}`, { 
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
         })
         .then(response => response.json())
         .then(data => {
@@ -129,7 +148,7 @@ const [searchResultsMessage, setSearchResultsMessage] = useState('');
     const handleDecreasePage = () => {
         setLastPage((prevLastPage) => {
             const newLastPage = Math.max(initialPage, prevLastPage - 1);
-            setBook((prevBook) => ({ ...prevBook, page_read: newLastPage })); // Update the book state
+            setBook((prevBook) => ({ ...prevBook, page_read: newLastPage })); 
             console.log(`Initial Page: ${initialPage}, Last Page: ${newLastPage}`);
             return newLastPage;
         });
@@ -138,7 +157,7 @@ const [searchResultsMessage, setSearchResultsMessage] = useState('');
     const toggleNotesModal = () => {
         setShowNotesModal(!showNotesModal);
         if (!showNotesModal) {
-            setEditableNotes(book ? book.notes : ""); // Ensure book is not null
+            setEditableNotes(book ? book.notes : ""); 
         }
     };
 
@@ -146,6 +165,7 @@ const [searchResultsMessage, setSearchResultsMessage] = useState('');
         try {
             const response = await fetch(`${HOST}/book/updateNotes/${bookId}`, {
                 method: 'PUT',
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ notes: editableNotes })
             });
@@ -181,10 +201,10 @@ const [searchResultsMessage, setSearchResultsMessage] = useState('');
             matches.push(match.index);
         }
     
-        // After finding matches in searchNotes
+
 setSearchResults(matches);
 setCurrentSearchIndex(matches.length > 0 ? 0 : -1);
-updateSearchResultsMessage(0, matches.length); // Initial call with the first index
+updateSearchResultsMessage(0, matches.length);
 
 
 
@@ -196,7 +216,7 @@ updateSearchResultsMessage(0, matches.length); // Initial call with the first in
 
     const updateSearchResultsMessage = (currentIndex, totalResults) => {
         if (totalResults > 0) {
-            // Adjust for human-readable index (starting at 1 instead of 0)
+  
             setSearchResultsMessage(`${currentIndex + 1} of ${totalResults} results found`);
         } else {
             setSearchResultsMessage('0 results found');
@@ -214,7 +234,7 @@ updateSearchResultsMessage(0, matches.length); // Initial call with the first in
         textarea.setSelectionRange(index, endIndex);
     
         const linesUpToIndex = editableNotes.substring(0, index).split("\n");
-        const characterCount = linesUpToIndex.reduce((acc, line) => acc + line.length + 1, 0); // +1 for newline characters
+        const characterCount = linesUpToIndex.reduce((acc, line) => acc + line.length + 1, 0); 
         const averageCharWidth = textarea.scrollWidth / textarea.value.length;
         const scrollRatio = characterCount * averageCharWidth / textarea.scrollWidth;
     
@@ -242,7 +262,7 @@ updateSearchResultsMessage(0, matches.length); // Initial call with the first in
         setCurrentSearchIndex(prev => (prev - 1 + searchResults.length) % searchResults.length);
     };
 
-    // Adjusted from previous examples
+
 
     const handleNextPrevSearchResult = (direction) => {
         setCurrentSearchIndex(prevIndex => {
@@ -250,9 +270,9 @@ updateSearchResultsMessage(0, matches.length); // Initial call with the first in
                 ? (prevIndex + 1) % searchResults.length
                 : (prevIndex - 1 + searchResults.length) % searchResults.length;
             
-            // Call scrollToSearchResult directly with the newIndex's position to ensure synchronization
+ 
             scrollToSearchResult(searchResults[newIndex]);
-            // Update the message with the new index position
+    
             updateSearchResultsMessage(newIndex, searchResults.length);
     
             return newIndex;
@@ -287,7 +307,7 @@ updateSearchResultsMessage(0, matches.length); // Initial call with the first in
   <button
     onClick={handleDecreasePage}
     className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
-    style={{ margin: '0 12px' }} // Increased space around the button
+    style={{ margin: '0 12px' }} 
   >
     -
   </button>
@@ -295,7 +315,7 @@ updateSearchResultsMessage(0, matches.length); // Initial call with the first in
   <button
     onClick={handleIncreasePage}
     className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
-    style={{ margin: '0 12px' }} // Increased space around the button
+    style={{ margin: '0 12px' }}
   >
     +
   </button>
@@ -332,16 +352,14 @@ updateSearchResultsMessage(0, matches.length); // Initial call with the first in
                 </div>
             </div>
 
-         
+
       
-          {/* Notes Modal */}
-          {/* Notes Modal */}
 {showNotesModal && (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center overflow-y-auto h-full w-full" id="my-modal">
     <div className="relative m-auto p-5 border w-11/12 max-w-4xl h-full shadow-lg rounded-md bg-white flex flex-col">
       <div className="flex-1 overflow-auto p-2">
         <h3 className="text-lg leading-6 font-medium text-gray-900 text-center mb-2">Notes - {book.title}</h3>
-        {/* Before the textarea for notes */}
+    
         <div className="flex space-x-2 mb-2 items-center">
           <input
             type="text"
@@ -357,7 +375,7 @@ updateSearchResultsMessage(0, matches.length); // Initial call with the first in
             Search
           </button>
         </div>
-        {/* Display search results message */}
+      
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm">{searchResultsMessage}</p>
           <div className="flex space-x-2">

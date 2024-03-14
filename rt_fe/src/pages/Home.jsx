@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProgressBar from '../components/ProgressBar';
 import { HOST } from '../api'
+import LoginModal from '../components/LoginModal';
+import Cookies from 'js-cookie';
+import { jwtDecode } from 'jwt-decode'; 
+
 
 const Home = () => {
     const navigate = useNavigate();
@@ -9,6 +13,59 @@ const Home = () => {
     const [readingHistory, setReadingHistory] = useState([]); 
     const [isModalOpen, setIsModalOpen] = useState(false); 
     const [editorContent, setEditorContent] = useState("");
+    const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useState(!!Cookies.get('token'));
+    const [userEmail, setUserEmail] = useState('');
+    const [userId, setUserId] = useState(null);
+    const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
+
+    useEffect(() => {
+        const token = Cookies.get('token');
+        if (token) {
+          const decodedToken = jwtDecode(token);
+          setUserEmail(decodedToken.email);
+          setUserId(decodedToken.id);
+        } else {
+          setUserEmail('');
+          setUserId(null);
+        }
+      }, [isLoggedIn]);
+
+    
+
+      useEffect(() => {
+        if (userId) {
+            console.log('User ID is set:', userId);
+        fetchBooks();
+        fetchReadingHistory();
+        }
+    }, [isLoggedIn, isLoginModalOpen, userId]);
+    
+
+    const toggleLoginModal = () => {
+        setIsLoginModalOpen(!isLoginModalOpen);
+    };
+
+    const handleSuccessfulLogin = () => {
+        setIsLoggedIn(true);
+
+    };
+
+    const handleLogoff = () => {
+   
+        const isConfirmed = window.confirm("Are you sure you want to log off?");
+    
+
+        if (isConfirmed) {
+            Cookies.remove('token');
+            setIsLoggedIn(false);
+            fetchBooks();
+            fetchReadingHistory();
+            window.location.reload();
+        }
+    
+    };
+    
 
     const navigateToBookList = () => {
         navigate('/booklist');
@@ -35,73 +92,93 @@ const Home = () => {
     
 
     const fetchBooks = async () => {
+        console.log(userId)
+        if (!userId) return; 
         try {
-            const response = await fetch(`${HOST}/book/viewBooks`);
+            const response = await fetch(`${HOST}/book/viewBooks?userId=${userId}`, {
+                method: 'GET',
+                credentials: 'include', 
+            });
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
-            
-         
-            const currentReadBooks = data.books.filter(book => book.status === 'Current Read');
-            setCurrentReadBooks(currentReadBooks);
+            setCurrentReadBooks(data.books.filter(book => book.status === 'Current Read'));
         } catch (error) {
             console.error("Error fetching books: ", error);
         }
     };
+    
 
     const fetchReadingHistory = async () => {
+        console.log(userId)
+        if (!userId) return;
         try {
-            const response = await fetch(`${HOST}/book/readingHistory`);
+            const response = await fetch(`${HOST}/book/readingHistory?userId=${userId}`, {
+                method: 'GET',
+                credentials: 'include',
+            }); 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
-            setReadingHistory(data.readingRecords); 
+            setReadingHistory(data.readingRecords);
         } catch (error) {
             console.error("Error fetching reading history: ", error);
         }
     };
 
   
-const fetchLearningList = async () => {
-    try {
-        const response = await fetch(`${HOST}/book/learning/1`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+    const fetchLearningList = async () => {
+        if (!userId) return; 
+        try {
+            const response = await fetch(`${HOST}/book/learning/${userId}`, {
+                method: 'GET',
+                credentials: 'include',
+            }); 
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            setEditorContent(data.learningItem.learning_list);
+        } catch (error) {
+            console.error("Error fetching learning list: ", error);
         }
-        const data = await response.json();
-        setEditorContent(data.learningItem.learning_list);
-    } catch (error) {
-        console.error("Error fetching learning list: ", error);
-    }
-};
+    };
 
 
-const handleSaveContent = async () => {
-    try {
-        const response = await fetch(`${HOST}/book/learning/1`, { 
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ learning_list: editorContent }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+    const handleSaveContent = async () => {
+        if (!userId) {
+            alert("User ID is not available. Please log in again.");
+            return;
         }
-
-        const data = await response.json();
-        console.log('Save successful:', data);
-        alert('Learning list updated successfully.'); 
-    } catch (error) {
-        console.error("Error saving learning list: ", error);
-        alert('Failed to update learning list.'); 
-    }
-
-    toggleModal(); 
-};
+    
+        try {
+            const response = await fetch(`${HOST}/book/learning/${userId}`, { 
+                method: 'PUT',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ learning_list: editorContent }), 
+            });
+    
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+    
+            const data = await response.json();
+            console.log('Save successful:', data);
+            alert('Learning list updated successfully.'); 
+        } catch (error) {
+            console.error("Error saving learning list: ", error);
+            alert('Failed to update learning list.'); 
+        }
+    
+        toggleModal(); 
+    };
+    
+    
 
 
 
@@ -120,15 +197,81 @@ const handleSaveContent = async () => {
     const [last7Days, setLast7Days] = useState(getLast7Days());
 
 
-    useEffect(() => {
+    useEffect(() => {   
         fetchBooks();
         fetchReadingHistory();
-    }, []);
+    }, [isLoggedIn, isLoginModalOpen]);
+
+    const getWeekDates = (offset = 0) => {
+        const endOfWeek = new Date();
+        endOfWeek.setDate(endOfWeek.getDate() - endOfWeek.getDay() + 6 - 7 * offset); 
+        const dates = [];
+        for (let i = 0; i < 7; i++) {
+            const newDate = new Date(endOfWeek);
+            newDate.setDate(newDate.getDate() - i);
+            dates.push(newDate.toISOString().split('T')[0]);
+        }
+        return dates;
+    };
+    
+
+    const handlePrevWeek = () => {
+        setCurrentWeekOffset(currentWeekOffset + 1);
+    };
+
+    const handleNextWeek = () => {
+        if (currentWeekOffset > 0) {
+            setCurrentWeekOffset(currentWeekOffset - 1);
+        }
+    };
+
+    useEffect(() => {
+        setLast7Days(getWeekDates(currentWeekOffset));
+    }, [currentWeekOffset]);
 
     return (
-        <div className="container mx-auto p-4" style={{ backgroundColor: '#F3F8FF' }}>
+        <div className="container mx-auto p-4" style={{ backgroundColor: '#F3F8FF'}}>
+                 {userEmail && (
+    <div className="text-center">
+        <span className="text-lg" style={{ backgroundColor: 'green', borderRadius: '10px', padding: '3px 10px', display: 'inline-block', color: 'white' }}>
+            {userEmail}
+        </span>
+    </div>
+)}
+
+
+
         <div className="text-center my-6">
-            <h1 className="text-4xl font-bold mb-4" style={{ color: '#49108B' }}>Reading Tracker</h1>
+        <div className="flex justify-between items-center my-6">
+        <div className="invisible">
+                    <button
+                        className="font-bold py-2 px-4 rounded opacity-0"
+                    >
+                        Login
+                    </button>
+                </div>
+
+                <h1 className="text-4xl font-bold" style={{ color: '#49108B' }}>Reading Tracker</h1>
+
+                {isLoggedIn ? (
+                    <button
+                        onClick={handleLogoff}
+                        className="font-bold py-2 px-4 rounded transition duration-300"
+                        style={{ backgroundColor: '#8B0000', color: '#F3F8FF' }}
+                    >
+                        Logoff
+                    </button>
+                ) : (
+                    <button
+                        onClick={toggleLoginModal}
+                        className="font-bold py-2 px-4 rounded transition duration-300"
+                        style={{ backgroundColor: 'green', color: '#F3F8FF' }}
+                    >
+                        Login
+                    </button>
+                )}
+            </div>
+
             <button
                 onClick={navigateToBookList}
                 className="font-bold py-2 px-4 mx-2 rounded transition duration-300"
@@ -141,7 +284,7 @@ const handleSaveContent = async () => {
         </div>
 
         
-           {/* Current Read Section */}
+
 
 <div className="my-10 p-6 shadow-lg rounded-lg" style={{ backgroundColor: '#49108B' }}>
 
@@ -183,9 +326,17 @@ const handleSaveContent = async () => {
 
 
 
-            {/* Reading History Section */}
+        
             <div className="my-10">
     <h2 className="text-3xl font-semibold mb-6 text-center" style={{ color: '#49108B' }}>Reading History</h2>
+    <div className="flex justify-between">
+                    <button onClick={handlePrevWeek} className="font-bold mb-4 py-2 px-4 rounded transition duration-300" style={{ backgroundColor: '#7E30E1', color: '#F3F8FF' }}>
+                        Prev Week
+                    </button>
+                    <button onClick={handleNextWeek} className="font-bold mb-4 py-2 px-4 rounded transition duration-300" style={{ backgroundColor: '#7E30E1', color: '#F3F8FF' }} disabled={currentWeekOffset === 0}>
+                        Next Week
+                    </button>
+                </div>
     {
         last7Days.map((date, index) => {
             const todaysRecords = readingHistory.filter(record => record.date === date);
@@ -238,6 +389,8 @@ const handleSaveContent = async () => {
                     </div>
                 </div>
             )}
+
+{isLoginModalOpen && <LoginModal toggleModal={toggleLoginModal} onSuccessfulLogin={handleSuccessfulLogin} />}
 
 
  

@@ -4,25 +4,39 @@ import { Link } from 'react-router-dom';
 import CircularProgressBar from '../components/CircularProgressBar';
 import { HOST } from '../api';
 import Navbar from '../components/Navbar';
+import Cookies from 'js-cookie';
+import { jwtDecode } from 'jwt-decode';
 
 const BookList = () => {
     const navigate = useNavigate();
     const [books, setBooks] = useState({ toBeRead: [], finished: [] });
+    const [userId, setUserId] = useState(null);
+
+    useEffect(() => {
+        const token = Cookies.get('token');
+        if (token) {
+            const decodedToken = jwtDecode(token);
+            setUserId(decodedToken.id); 
+        }
+    }, []);
 
     const navigateToAddBook = () => {
         navigate('/addbook');
     };
 
-    // Function to fetch books
-    const fetchBooks = async () => {
+    
+    const fetchBooks = async (userId) => {
         try {
-            const response = await fetch(`${HOST}/book/viewBooks`);
+            const response = await fetch(`${HOST}/book/viewBooks?userId=${userId}`,{
+                method: 'GET',
+                credentials: 'include'
+            });
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
             
-            // Filter books based on status
+          
             const toBeReadBooks = data.books.filter(book => book.status === 'To Be Read');
             const finishedBooks = data.books.filter(book => book.status === 'Finish');
             setBooks({ toBeRead: toBeReadBooks, finished: finishedBooks });
@@ -31,10 +45,12 @@ const BookList = () => {
         }
     };
 
-    // Use effect to fetch books on component mount
+
     useEffect(() => {
-        fetchBooks();
-    }, []);
+        if (userId) {
+            fetchBooks(userId);
+        }
+    }, [userId]);
 
  
     return (
@@ -51,7 +67,7 @@ const BookList = () => {
                 </button>
             </div>
 
-            {/* To Be Read Section */}
+      
             <div className="mb-8 p-4 rounded shadow" style={{ backgroundColor: '#F3F8FF' }}>
                 <h2 className="text-2xl font-semibold pb-2 mb-4" style={{ borderBottom: `5px solid #7E30E1`, color: '#49108B' }}>To Be Read</h2>
                 {books.toBeRead.map((book, index) => (
@@ -64,7 +80,7 @@ const BookList = () => {
                 ))}
             </div>
 
-            {/* Completed Section */}
+     
             <div className="mb-8 p-4 rounded shadow" style={{ backgroundColor: '#F3F8FF' }}>
                 <h2 className="text-2xl font-semibold pb-2 mb-4" style={{ borderBottom: `5px solid #7E30E1`, color: '#49108B' }}>Completed</h2>
                 {books.finished.map((book, index) => (
