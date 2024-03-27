@@ -29,12 +29,16 @@ module.exports = {
         return res.status(400).json({ message: 'User already exists with the provided email' });
       }
   
+      const maxIdRes = await pool.query('SELECT MAX(id) as maxid FROM "user"');
+      const maxId = maxIdRes.rows[0].maxid ? parseInt(maxIdRes.rows[0].maxid) : 0; // If no maxid, default to 0
+      const nextId = maxId + 1; 
+  
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
   
       const newUser = await pool.query(
-        'INSERT INTO "user" (email, password) VALUES ($1, $2) RETURNING id, email',
-        [email, hashedPassword]
+        'INSERT INTO "user" (id, email, password) VALUES ($1, $2, $3) RETURNING id, email',
+        [nextId, email, hashedPassword]
       );
   
       res.status(201).json({
@@ -46,6 +50,7 @@ module.exports = {
       res.status(500).json({ message: 'Failed to register user' });
     }
   },
+  
   
 
   loginUser: async function(req, res) {
@@ -94,9 +99,15 @@ module.exports = {
     }
   
     try {
+    
+      const maxIdRes = await pool.query('SELECT MAX(id) as maxid FROM Book');
+      const maxId = maxIdRes.rows[0].maxid ? parseInt(maxIdRes.rows[0].maxid) : 0;
+      const nextId = maxId + 1;
+  
+    
       const result = await pool.query(
-        'INSERT INTO Book (title, author, total_page, status, page_read, notes, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-        [title, author, total_page, status, page_read, notes, user_id]
+        'INSERT INTO Book (id, title, author, total_page, status, page_read, notes, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+        [nextId, title, author, total_page, status, page_read, notes, user_id]
       );
   
       const newBook = result.rows[0];
@@ -109,6 +120,7 @@ module.exports = {
       res.status(500).json({ message: 'Failed to add new book' });
     }
   },
+  
   
 
   viewBooks: async function viewBooks(req, res) {
@@ -168,6 +180,7 @@ startReading: async function (req, res) {
     res.status(500).json({ message: 'Failed to update book status' });
   }
 },
+
 closeBook: async function (req, res) {
   const { bookId } = req.params;
 
@@ -255,13 +268,17 @@ updateProgress: async function (req, res) {
       `;
       await pool.query(updateHistoryQuery, [lastPageInt, title, author, bookIdInt, currentDate]);
     } else {
-      const insertHistoryQuery = `
-      INSERT INTO reading_history (book_id, date, book_title, author, start_page, end_page, user_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *;
-    `;
-    await pool.query(insertHistoryQuery, [bookIdInt, currentDate, title, author, initialPageInt, lastPageInt, userId]); 
-  }
+      const maxIdRes = await pool.query('SELECT MAX(id) as maxid FROM reading_history');
+  const maxId = maxIdRes.rows[0].maxid ? parseInt(maxIdRes.rows[0].maxid) : 0;
+  const nextId = maxId + 1;
+
+  const insertHistoryQuery = `
+    INSERT INTO reading_history (id, book_id, date, book_title, author, start_page, end_page, user_id)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING *;
+  `;
+  await pool.query(insertHistoryQuery, [nextId, bookIdInt, currentDate, title, author, initialPageInt, lastPageInt, userId]);
+}
 
     await pool.query('COMMIT');
     res.status(200).json({ message: 'Progress updated successfully', book: updatedBook.rows[0] });
