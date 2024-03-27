@@ -460,21 +460,23 @@ updateLearningList: async function(req, res) {
       );
 
       if (updateResult.rowCount === 0) {
-    
-          const insertResult = await pool.query(
-              'INSERT INTO learning (user_id, learning_list) VALUES ($1, $2) RETURNING *',
-              [userId, learning_list]
-          );
-
-          if (insertResult.rows.length === 0) {
-              return res.status(404).json({ message: 'Failed to create learning item' });
-          }
-
-   
-          return res.status(201).json({
-              message: 'Learning item created successfully',
-              learningItem: insertResult.rows[0]
-          });
+        const maxIdRes = await pool.query('SELECT MAX(id) as maxid FROM learning');
+        const maxId = maxIdRes.rows[0].maxid ? parseInt(maxIdRes.rows[0].maxid, 10) : 0;
+        const nextId = maxId + 1;
+      
+        const insertResult = await pool.query(
+            'INSERT INTO learning (id, user_id, learning_list) VALUES ($1, $2, $3) RETURNING *',
+            [nextId, userId, learning_list]
+        );
+      
+        if (insertResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Failed to create learning item' });
+        }
+      
+        return res.status(201).json({
+            message: 'Learning item created successfully',
+            learningItem: insertResult.rows[0]
+        });
       }
 
     
