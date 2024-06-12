@@ -380,7 +380,7 @@ updateSearchResultsMessage(0, matches.length);
           <p className="text-sm">{searchResultsMessage}</p>
           <div className="flex space-x-2">
             <button onClick={() => handleNextPrevSearchResult('prev')} className="bg-gray-500 hover:bg-gray-700 text-white font-bold px-4 rounded">
-              Back
+              Previous
             </button>
             <button onClick={() => handleNextPrevSearchResult('next')} className="bg-gray-500 hover:bg-gray-700 text-white font-bold px-4 rounded">
               Next
