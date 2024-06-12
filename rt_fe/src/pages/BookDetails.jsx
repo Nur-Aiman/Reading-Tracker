@@ -310,7 +310,7 @@ const saveNotes = () => {
           </button>
           {showNotesModal && (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center overflow-y-auto h-full w-full" id="my-modal">
-    <div className="relative m-auto p-5 border w-11/12 max-w-4xl h-5/6 shadow-lg rounded-md bg-white flex flex-col">
+    <div className="relative m-auto p-5 border w-11/12 max-w-4xl h-full shadow-lg rounded-md bg-white flex flex-col">
       <div className="flex-1 overflow-auto p-2">
         <h3 className="text-lg leading-6 font-medium text-gray-900 text-center mb-2">Notes - {title}</h3>
         
