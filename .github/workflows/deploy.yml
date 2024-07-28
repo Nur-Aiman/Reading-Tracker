@@ -28,7 +28,7 @@ jobs:
 
     - name: Install dependencies
       run: npm install
-      working-directory: ./MT_BE
+      working-directory: ./RT_BE
 
     - name: Fetch DATABASE_URL from Heroku
       env:
@@ -39,7 +39,7 @@ jobs:
 
     - name: Run setup script
       run: |
-        chmod +x ./MT_BE/bin/bash.sh
-        ./MT_BE/bin/bash.sh
+        chmod +x ./RT_BE/bin/bash.sh
+        ./RT_BE/bin/bash.sh
       env:
         DATABASE_URL: ${{ env.DATABASE_URL }}
