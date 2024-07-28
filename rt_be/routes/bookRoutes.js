@@ -8,16 +8,16 @@ router.get('/', function(req, res, next) {
   res.send('respond with a resource');
 });
 
-router.post('/registerUser', registerUser);
-router.post('/loginUser', loginUser);
+// router.post('/registerUser', registerUser);
+// router.post('/loginUser', loginUser);
 router.post('/addBook', addBook); 
 router.get('/viewBook/:bookId', viewBook);
 router.put('/updateBook/:bookId', updateBook);
 router.put('/startReading/:bookId', startReading);
 router.get('/viewBooks', viewBooks);
 router.put('/closeBook/:bookId', closeBook);
-router.get('/learning/:userId', viewThingsToLearn);
-router.put('/learning/:userId', updateLearningList); 
+router.get('/learning', viewThingsToLearn);
+router.put('/learning', updateLearningList); 
 router.put('/updateNotes/:bookId', updateNotes);
 router.get('/readingHistory', readingHistory); 
 router.put('/updateProgress/:bookId', updateProgress);

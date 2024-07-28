@@ -1,33 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
-import CircularProgressBar from '../components/CircularProgressBar';
 import { HOST } from '../api';
 import Navbar from '../components/Navbar';
-import Cookies from 'js-cookie';
-import { jwtDecode } from 'jwt-decode';
 
 const BookList = () => {
     const navigate = useNavigate();
     const [books, setBooks] = useState({ toBeRead: [], finished: [] });
-    const [userId, setUserId] = useState(null);
-
-    useEffect(() => {
-        const token = Cookies.get('token');
-        if (token) {
-            const decodedToken = jwtDecode(token);
-            setUserId(decodedToken.id); 
-        }
-    }, []);
 
     const navigateToAddBook = () => {
         navigate('/addbook');
     };
 
-    
-    const fetchBooks = async (userId) => {
+    const fetchBooks = async () => {
         try {
-            const response = await fetch(`${HOST}/book/viewBooks?userId=${userId}`,{
+            const response = await fetch(`${HOST}/book/viewBooks`, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -35,8 +22,7 @@ const BookList = () => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
-            
-          
+
             const toBeReadBooks = data.books.filter(book => book.status === 'To Be Read');
             const finishedBooks = data.books.filter(book => book.status === 'Finish');
             setBooks({ toBeRead: toBeReadBooks, finished: finishedBooks });
@@ -45,17 +31,13 @@ const BookList = () => {
         }
     };
 
-
     useEffect(() => {
-        if (userId) {
-            fetchBooks(userId);
-        }
-    }, [userId]);
+        fetchBooks();
+    }, []);
 
- 
     return (
         <div className="max-w-2xl mx-auto p-4" style={{ backgroundColor: '#F3F8FF' }}>
-             <Navbar />
+            <Navbar />
             <div className="text-center my-6">
                 <h1 className="text-4xl font-bold mb-4" style={{ color: '#49108B' }}>My Bookshelf</h1>
                 <button
@@ -67,7 +49,6 @@ const BookList = () => {
                 </button>
             </div>
 
-      
             <div className="mb-8 p-4 rounded shadow" style={{ backgroundColor: '#F3F8FF' }}>
                 <h2 className="text-2xl font-semibold pb-2 mb-4" style={{ borderBottom: `5px solid #7E30E1`, color: '#49108B' }}>To Be Read</h2>
                 {books.toBeRead.map((book, index) => (
@@ -80,7 +61,6 @@ const BookList = () => {
                 ))}
             </div>
 
-     
             <div className="mb-8 p-4 rounded shadow" style={{ backgroundColor: '#F3F8FF' }}>
                 <h2 className="text-2xl font-semibold pb-2 mb-4" style={{ borderBottom: `5px solid #7E30E1`, color: '#49108B' }}>Completed</h2>
                 {books.finished.map((book, index) => (

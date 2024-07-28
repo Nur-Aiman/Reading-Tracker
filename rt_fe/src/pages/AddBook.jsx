@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Cookies from 'js-cookie';
-import { jwtDecode } from 'jwt-decode';
 import { HOST } from '../api';
 import Navbar from '../components/Navbar';
 
@@ -12,15 +10,6 @@ const AddBook = () => {
         author: '',
         total_page: ''
     });
-    const [userId, setUserId] = useState(null);
-
-    useEffect(() => {
-        const token = Cookies.get('token');
-        if (token) {
-            const decodedToken = jwtDecode(token);
-            setUserId(decodedToken.id);
-        }
-    }, []);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -29,18 +18,11 @@ const AddBook = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!userId) {
-            alert('User ID is not available. Please log in again.');
-            return;
-        }
-
-      
         const bookData = {
             ...formData,
             status: 'To Be Read',   
             page_read: 0,           
             notes: '-',             
-            user_id: userId,
         };
 
         try {
@@ -69,9 +51,9 @@ const AddBook = () => {
 
     return (
         <div className="max-w-md mx-auto p-6 shadow-md rounded-lg" style={{ backgroundColor: '#F3F8FF' }}>
-             <Navbar />
+            <Navbar />
             <div className="text-center my-6">
-            <h2 className="text-2xl font-bold text-center mb-6" style={{ color: '#49108B' }}>Add New Book</h2>
+                <h2 className="text-2xl font-bold text-center mb-6" style={{ color: '#49108B' }}>Add New Book</h2>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
