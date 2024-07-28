@@ -148,12 +148,7 @@ const Home = () => {
         <div className="container mx-auto p-4" style={{ backgroundColor: '#F3F8FF' }}>
             <Navbar />
             <div className="text-center my-6">
-                <div className="flex justify-between items-center my-6">
-                    <div className="invisible">
-                        <button className="font-bold py-2 px-4 rounded opacity-0">
-                            Login
-                        </button>
-                    </div>
+                <div className="flex justify-center items-center my-6"> {/* Changed justify-between to justify-center */}
                     <h1 className="text-4xl font-bold" style={{ color: '#49108B' }}>Reading Tracker</h1>
                 </div>
                 <button
@@ -165,7 +160,7 @@ const Home = () => {
                 </button>
                 <button onClick={toggleModal} className="font-bold py-2 px-4 mx-2 rounded transition duration-300" style={{ backgroundColor: '#7E30E1', color: '#F3F8FF' }}>Things To Learn</button>
             </div>
-
+    
             <div className="my-10 p-6 shadow-lg rounded-lg" style={{ backgroundColor: '#49108B' }}>
                 <h2 className="text-3xl font-semibold mb-6 text-center" style={{ color: 'gold' }}>Current Read</h2>
                 {currentReadBooks.length > 0 ? (
@@ -200,7 +195,7 @@ const Home = () => {
                     <p className="text-center" style={{ color: '#F3F8FF' }}>No current read books available. Start reading</p>
                 )}
             </div>
-
+    
             <div className="my-10">
                 <h2 className="text-3xl font-semibold mb-6 text-center" style={{ color: '#49108B' }}>Reading History</h2>
                 <div className="flex justify-between">
@@ -235,7 +230,7 @@ const Home = () => {
                     })
                 }
             </div>
-
+    
             {isModalOpen && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
                     <div className="relative top-20 mx-auto p-5 border h-3/4 w-3/4 shadow-lg rounded-md bg-white">
@@ -260,7 +255,7 @@ const Home = () => {
                 </div>
             )}
         </div>
-    );
+    )
 };
 
 export default Home;
